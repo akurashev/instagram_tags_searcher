@@ -38,16 +38,6 @@ module InstagramTagsSearcher
     }
   end
 
-  def self.fetch_data(url)
-    header = {
-      'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; WOW64) ' \
-                      'AppleWebKit/537.36 (KHTML, like Gecko) ' \
-                      'Chrome/53.0.2785.104 Safari/537.36 Core/1.53.3357.400 ' \
-                      'QQBrowser/9.6.11858.400'
-    }
-    JSON.parse(URI.parse(url).open(header).read)
-  end
-
   def self.from_top(tag)
     tag = CGI.escape(tag)
     data = fetch_data("https://www.instagram.com/explore/tags/#{tag}/?__a=1")
@@ -75,12 +65,6 @@ module InstagramTagsSearcher
     [moretags.uniq, codes]
   end
 
-  def self.search_tags(words)
-    words.select do |word|
-      word.start_with?('#') && word.count('#') == 1 && word.length > 2
-    end
-  end
-
   def self.from_first_comment(code)
     data = fetch_data("https://www.instagram.com/p/#{code}/?__a=1")
     comments = data['graphql']['shortcode_media']['edge_media_to_parent_comment']
@@ -96,7 +80,6 @@ module InstagramTagsSearcher
   end
 
   def self.sort_by_frequency(tags)
-    amount = [10_000, 100_000, 1_000_000, 20_000_000]
     low = []
     middle = []
     high = []
@@ -104,26 +87,48 @@ module InstagramTagsSearcher
     tags.each do |tag|
       sleep(rand(1..4) * 0.1)
 
-      begin
-        tag_url = CGI.escape(tag[1..-1])
-        url = "https://www.instagram.com/explore/tags/#{tag_url}/?__a=1"
-        data = fetch_data(url)
-      rescue StandardError
-        next
-      end
+      posts_count = posts_count(tag)
 
-      posts = data['graphql']['hashtag']['edge_hashtag_to_media']
-      posts_count = posts['count'].to_i
-
-      if posts_count > amount[0] && posts_count <= amount[1]
+      case posts_count
+      when (10_001..100_000)
         low << tag
-      elsif posts_count > amount[1] && posts_count <= amount[2]
+      when (100_001..1_000_000)
         middle << tag
-      elsif posts_count > amount[2] && posts_count <= amount[3]
+      when (1_000_001..20_000_000)
         high << tag
       end
+    rescue StandardError
+      next
     end
 
     [low, middle, high]
+  end
+
+  def self.posts_count(tag)
+    tag_name = CGI.escape(tag[1..-1])
+    url = "https://www.instagram.com/explore/tags/#{tag_name}/?__a=1"
+    data = fetch_data(url)
+
+    posts = data['graphql']['hashtag']['edge_hashtag_to_media']
+    posts['count'].to_i
+  end
+
+  def self.search_tags(words)
+    words.select do |word|
+      word.start_with?('#') && word.count('#') == 1 && word.length > 2
+    end
+  end
+
+  def self.fetch_data(url)
+    header = {
+      'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; WOW64) ' \
+                      'AppleWebKit/537.36 (KHTML, like Gecko) ' \
+                      'Chrome/53.0.2785.104 Safari/537.36 Core/1.53.3357.400 ' \
+                      'QQBrowser/9.6.11858.400'
+    }
+
+    response = URI.parse(url).open(header).read
+
+    JSON.parse(response)
   end
 end
