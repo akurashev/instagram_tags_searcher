@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 Gem::Specification.new do |s|
   s.name    = 'instagram_tags_searcher'
   s.summary = 'Searches for Instagram tags related to the given tag'

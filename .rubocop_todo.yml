@@ -43,15 +43,6 @@ Style/Documentation:
 
 # Offense count: 2
 # Cop supports --auto-correct.
-# Configuration parameters: EnforcedStyle.
-# SupportedStyles: always, never
-Style/FrozenStringLiteralComment:
-  Exclude:
-    - 'instagram_tags_searcher.gemspec'
-    - 'lib/instagram_tags_searcher.rb'
-
-# Offense count: 2
-# Cop supports --auto-correct.
 # Configuration parameters: AutoCorrect, EnforcedStyle, IgnoredMethods.
 # SupportedStyles: predicate, comparison
 Style/NumericPredicate:
