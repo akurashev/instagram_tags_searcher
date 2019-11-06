@@ -62,9 +62,7 @@ module InstagramTagsSearcher
 
       local_tags = search_tags(words)
 
-      if local_tags.size < 30
-        codes << post['node']['shortcode']
-      end
+      codes << post['node']['shortcode'] if local_tags.size < 30
 
       moretags += local_tags
     end
