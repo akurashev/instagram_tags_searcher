@@ -41,8 +41,9 @@ module InstagramTagsSearcher
   def self.fetch_data(url)
     header = {
       'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; WOW64) ' \
-                      'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.104 ' \
-                      'Safari/537.36 Core/1.53.3357.400 QQBrowser/9.6.11858.400'
+                      'AppleWebKit/537.36 (KHTML, like Gecko) ' \
+                      'Chrome/53.0.2785.104 Safari/537.36 Core/1.53.3357.400 ' \
+                      'QQBrowser/9.6.11858.400'
     }
     JSON.parse(URI.parse(url).open(header).read)
   end
@@ -54,9 +55,11 @@ module InstagramTagsSearcher
     moretags = []
     codes = []
 
-    data['graphql']['hashtag']['edge_hashtag_to_top_posts']['edges'].each do |post|
+    posts = data['graphql']['hashtag']['edge_hashtag_to_top_posts']['edges']
+    posts.each do |post|
       begin
-        words = post['node']['edge_media_to_caption']['edges'][0]['node']['text'].split
+        text = post['node']['edge_media_to_caption']['edges'][0]['node']['text']
+        words = text.split
       rescue StandardError
         codes << post['node']['shortcode']
         next
@@ -80,11 +83,12 @@ module InstagramTagsSearcher
 
   def self.from_first_comment(code)
     data = fetch_data("https://www.instagram.com/p/#{code}/?__a=1")
+    comments = data['graphql']['shortcode_media']['edge_media_to_parent_comment']
 
-    comments_count = data['graphql']['shortcode_media']['edge_media_to_parent_comment']['count']
+    comments_count = comments['count']
 
     if comments_count.positive?
-      first_comment = data['graphql']['shortcode_media']['edge_media_to_parent_comment']['edges'][0]['node']['text'].split
+      first_comment = comments['edges'][0]['node']['text'].split
       search_tags(first_comment)
     else
       []
@@ -102,12 +106,14 @@ module InstagramTagsSearcher
 
       begin
         tag_url = CGI.escape(tag[1..-1])
-        data = fetch_data("https://www.instagram.com/explore/tags/#{tag_url}/?__a=1")
+        url = "https://www.instagram.com/explore/tags/#{tag_url}/?__a=1"
+        data = fetch_data(url)
       rescue StandardError
         next
       end
 
-      posts_count = data['graphql']['hashtag']['edge_hashtag_to_media']['count'].to_i
+      posts = data['graphql']['hashtag']['edge_hashtag_to_media']
+      posts_count = posts['count'].to_i
 
       if posts_count > amount[0] && posts_count <= amount[1]
         low << tag
