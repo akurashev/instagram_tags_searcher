@@ -24,11 +24,6 @@ Metrics/PerceivedComplexity:
   Max: 9
 
 # Offense count: 1
-Security/Open:
-  Exclude:
-    - 'lib/instagram_tags_searcher.rb'
-
-# Offense count: 1
 Style/Documentation:
   Exclude:
     - 'spec/**/*'
