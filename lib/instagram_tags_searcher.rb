@@ -8,7 +8,7 @@ module InstagramTagsSearcher
   def self.search(tag)
     new_tags, codes = from_top(tag)
 
-    if codes.count > 0
+    if codes.count.positive?
       codes.each do |code|
         more_tags = from_first_comment(code)
         new_tags += more_tags
@@ -83,7 +83,7 @@ module InstagramTagsSearcher
 
     comments_count = data['graphql']['shortcode_media']['edge_media_to_parent_comment']['count']
 
-    if comments_count > 0
+    if comments_count.positive?
       first_comment = data['graphql']['shortcode_media']['edge_media_to_parent_comment']['edges'][0]['node']['text'].split
       search_tags(first_comment)
     else
