@@ -44,7 +44,7 @@ module InstagramTagsSearcher
                       'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.104 ' \
                       'Safari/537.36 Core/1.53.3357.400 QQBrowser/9.6.11858.400'
     }
-    JSON::parse(open(url, header).read)
+    JSON.parse(open(url, header).read)
   end
 
   def self.from_top(tag)

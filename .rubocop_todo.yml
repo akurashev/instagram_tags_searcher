@@ -29,12 +29,6 @@ Security/Open:
     - 'lib/instagram_tags_searcher.rb'
 
 # Offense count: 1
-# Cop supports --auto-correct.
-Style/ColonMethodCall:
-  Exclude:
-    - 'lib/instagram_tags_searcher.rb'
-
-# Offense count: 1
 Style/Documentation:
   Exclude:
     - 'spec/**/*'
