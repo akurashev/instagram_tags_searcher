@@ -65,14 +65,6 @@ Style/NumericPredicate:
     - 'spec/**/*'
     - 'lib/instagram_tags_searcher.rb'
 
-# Offense count: 2
-# Cop supports --auto-correct.
-# Configuration parameters: EnforcedStyle.
-# SupportedStyles: implicit, explicit
-Style/RescueStandardError:
-  Exclude:
-    - 'lib/instagram_tags_searcher.rb'
-
 # Offense count: 7
 # Cop supports --auto-correct.
 # Configuration parameters: AutoCorrect, AllowHeredoc, AllowURI, URISchemes, IgnoreCopDirectives, IgnoredPatterns.

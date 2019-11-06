@@ -55,7 +55,7 @@ module InstagramTagsSearcher
     data['graphql']['hashtag']['edge_hashtag_to_top_posts']['edges'].each do |post|
       begin
         words = post['node']['edge_media_to_caption']['edges'][0]['node']['text'].split
-      rescue
+      rescue StandardError
         codes << post['node']['shortcode']
         next
       end
@@ -103,7 +103,7 @@ module InstagramTagsSearcher
       begin
         tag_url = CGI.escape(tag[1..-1])
         data = fetch_data("https://www.instagram.com/explore/tags/#{tag_url}/?__a=1")
-      rescue
+      rescue StandardError
         next
       end
 
