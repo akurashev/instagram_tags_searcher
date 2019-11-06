@@ -4,4 +4,6 @@ Gem::Specification.new do |s|
   s.version = '0.0.1'
   s.authors = ['Andrey Kurashev']
   s.files   = ['lib/instagram_tags_searcher.rb']
+
+  s.add_development_dependency('rubocop', '~> 0.76')
 end
