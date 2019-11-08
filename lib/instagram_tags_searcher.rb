@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'open-uri'
 require 'json'
 require 'cgi'
@@ -6,7 +8,7 @@ module InstagramTagsSearcher
   def self.search(tag)
     new_tags, codes = from_top(tag)
 
-    if codes.count > 0
+    if codes.count.positive?
       codes.each do |code|
         more_tags = from_first_comment(code)
         new_tags += more_tags
@@ -36,15 +38,6 @@ module InstagramTagsSearcher
     }
   end
 
-  def self.fetch_data(url)
-    header = {
-      'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; WOW64) ' \
-                      'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.104 ' \
-                      'Safari/537.36 Core/1.53.3357.400 QQBrowser/9.6.11858.400'
-    }
-    JSON::parse(open(url, header).read)
-  end
-
   def self.from_top(tag)
     tag = CGI.escape(tag)
     data = fetch_data("https://www.instagram.com/explore/tags/#{tag}/?__a=1")
@@ -52,24 +45,72 @@ module InstagramTagsSearcher
     moretags = []
     codes = []
 
-    data['graphql']['hashtag']['edge_hashtag_to_top_posts']['edges'].each do |post|
+    posts = data['graphql']['hashtag']['edge_hashtag_to_top_posts']['edges']
+    posts.each do |post|
       begin
-        words = post['node']['edge_media_to_caption']['edges'][0]['node']['text'].split
-      rescue
+        text = post['node']['edge_media_to_caption']['edges'][0]['node']['text']
+        words = text.split
+      rescue StandardError
         codes << post['node']['shortcode']
         next
       end
 
       local_tags = search_tags(words)
 
-      if local_tags.size < 30
-        codes << post['node']['shortcode']
-      end
+      codes << post['node']['shortcode'] if local_tags.size < 30
 
       moretags += local_tags
     end
 
     [moretags.uniq, codes]
+  end
+
+  def self.from_first_comment(code)
+    data = fetch_data("https://www.instagram.com/p/#{code}/?__a=1")
+    comments = data['graphql']['shortcode_media']['edge_media_to_parent_comment']
+
+    comments_count = comments['count']
+
+    if comments_count.positive?
+      first_comment = comments['edges'][0]['node']['text'].split
+      search_tags(first_comment)
+    else
+      []
+    end
+  end
+
+  def self.sort_by_frequency(tags)
+    low = []
+    middle = []
+    high = []
+
+    tags.each do |tag|
+      sleep(rand(1..4) * 0.1)
+
+      posts_count = posts_count(tag)
+
+      case posts_count
+      when (10_001..100_000)
+        low << tag
+      when (100_001..1_000_000)
+        middle << tag
+      when (1_000_001..20_000_000)
+        high << tag
+      end
+    rescue StandardError
+      next
+    end
+
+    [low, middle, high]
+  end
+
+  def self.posts_count(tag)
+    tag_name = CGI.escape(tag[1..-1])
+    url = "https://www.instagram.com/explore/tags/#{tag_name}/?__a=1"
+    data = fetch_data(url)
+
+    posts = data['graphql']['hashtag']['edge_hashtag_to_media']
+    posts['count'].to_i
   end
 
   def self.search_tags(words)
@@ -78,46 +119,16 @@ module InstagramTagsSearcher
     end
   end
 
-  def self.from_first_comment(code)
-    data = fetch_data("https://www.instagram.com/p/#{code}/?__a=1")
+  def self.fetch_data(url)
+    header = {
+      'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; WOW64) ' \
+                      'AppleWebKit/537.36 (KHTML, like Gecko) ' \
+                      'Chrome/53.0.2785.104 Safari/537.36 Core/1.53.3357.400 ' \
+                      'QQBrowser/9.6.11858.400'
+    }
 
-    comments_count = data['graphql']['shortcode_media']['edge_media_to_parent_comment']['count']
+    response = URI.parse(url).open(header).read
 
-    if comments_count > 0
-      first_comment = data['graphql']['shortcode_media']['edge_media_to_parent_comment']['edges'][0]['node']['text'].split
-      search_tags(first_comment)
-    else
-      []
-    end
-  end
-
-  def self.sort_by_frequency(tags)
-    amount = [10_000, 100_000, 1_000_000, 20_000_000]
-    low = []
-    middle = []
-    high = []
-
-    tags.each do |tag|
-      sleep(rand(1..4) * 0.1)
-
-      begin
-        tag_url = CGI.escape(tag[1..-1])
-        data = fetch_data("https://www.instagram.com/explore/tags/#{tag_url}/?__a=1")
-      rescue
-        next
-      end
-
-      posts_count = data['graphql']['hashtag']['edge_hashtag_to_media']['count'].to_i
-
-      if posts_count > amount[0] && posts_count <= amount[1]
-        low << tag
-      elsif posts_count > amount[1] && posts_count <= amount[2]
-        middle << tag
-      elsif posts_count > amount[2] && posts_count <= amount[3]
-        high << tag
-      end
-    end
-
-    [low, middle, high]
+    JSON.parse(response)
   end
 end
