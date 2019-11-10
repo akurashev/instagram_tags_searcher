@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'instagram_tags_searcher/instagram_client'
+require 'instagram_tags_searcher/instagram/client'
 
 module InstagramTagsSearcher
   def self.search(tag)
@@ -37,24 +37,22 @@ module InstagramTagsSearcher
   end
 
   def self.from_top(tag)
-    data = InstagramClient.new.top(tag)
+    posts = Instagram::Client.new.top(tag).posts
 
     moretags = []
     codes = []
 
-    posts = data['graphql']['hashtag']['edge_hashtag_to_top_posts']['edges']
     posts.each do |post|
       begin
-        text = post['node']['edge_media_to_caption']['edges'][0]['node']['text']
-        words = text.split
+        words = post.text.split
       rescue StandardError
-        codes << post['node']['shortcode']
+        codes << post.code
         next
       end
 
       local_tags = search_tags(words)
 
-      codes << post['node']['shortcode'] if local_tags.size < 30
+      codes << post.code if local_tags.size < 30
 
       moretags += local_tags
     end
@@ -63,17 +61,9 @@ module InstagramTagsSearcher
   end
 
   def self.from_first_comment(code)
-    data = InstagramClient.new.post(code)
-    comments = data['graphql']['shortcode_media']['edge_media_to_parent_comment']
+    post = Instagram::Client.new.post(code)
 
-    comments_count = comments['count']
-
-    if comments_count.positive?
-      first_comment = comments['edges'][0]['node']['text'].split
-      search_tags(first_comment)
-    else
-      []
-    end
+    search_tags(post.first_comment_text.split)
   end
 
   def self.sort_by_frequency(tags)
@@ -84,7 +74,7 @@ module InstagramTagsSearcher
     tags.each do |tag|
       sleep(rand(1..4) * 0.1)
 
-      posts_count = posts_count(tag)
+      posts_count = Instagram::Client.new.top(tag).posts_count
 
       case posts_count
       when (10_001..100_000)
@@ -99,13 +89,6 @@ module InstagramTagsSearcher
     end
 
     [low, middle, high]
-  end
-
-  def self.posts_count(tag)
-    data = InstagramClient.new.top(tag)
-
-    posts = data['graphql']['hashtag']['edge_hashtag_to_media']
-    posts['count'].to_i
   end
 
   def self.search_tags(words)
