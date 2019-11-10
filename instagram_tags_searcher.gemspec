@@ -3,7 +3,7 @@
 Gem::Specification.new do |s|
   s.name    = 'instagram_tags_searcher'
   s.summary = 'Searches for Instagram tags related to the given tag'
-  s.version = '0.0.3'
+  s.version = '0.0.4'
   s.authors = ['Andrey Kurashev']
   s.files   = ['lib/instagram_tags_searcher.rb']
 
