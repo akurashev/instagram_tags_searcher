@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
-require 'cgi'
-
-require 'instagram_tags_searcher/http_client'
+require 'instagram_tags_searcher/instagram_client'
 
 module InstagramTagsSearcher
   def self.search(tag)
@@ -39,10 +37,7 @@ module InstagramTagsSearcher
   end
 
   def self.from_top(tag)
-    tag = CGI.escape(tag)
-    data = HttpClient.new.read_hash(
-      "https://www.instagram.com/explore/tags/#{tag}/?__a=1"
-    )
+    data = InstagramClient.new.top(tag)
 
     moretags = []
     codes = []
@@ -68,9 +63,7 @@ module InstagramTagsSearcher
   end
 
   def self.from_first_comment(code)
-    data = HttpClient.new.read_hash(
-      "https://www.instagram.com/p/#{code}/?__a=1"
-    )
+    data = InstagramClient.new.post(code)
     comments = data['graphql']['shortcode_media']['edge_media_to_parent_comment']
 
     comments_count = comments['count']
@@ -109,9 +102,7 @@ module InstagramTagsSearcher
   end
 
   def self.posts_count(tag)
-    tag_name = CGI.escape(tag[1..-1])
-    url = "https://www.instagram.com/explore/tags/#{tag_name}/?__a=1"
-    data = HttpClient.new.read_hash(url)
+    data = InstagramClient.new.top(tag)
 
     posts = data['graphql']['hashtag']['edge_hashtag_to_media']
     posts['count'].to_i
