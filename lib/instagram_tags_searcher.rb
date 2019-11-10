@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require 'open-uri'
-require 'json'
 require 'cgi'
+
+require 'instagram_tags_searcher/http_client'
 
 module InstagramTagsSearcher
   def self.search(tag)
@@ -40,7 +40,9 @@ module InstagramTagsSearcher
 
   def self.from_top(tag)
     tag = CGI.escape(tag)
-    data = fetch_data("https://www.instagram.com/explore/tags/#{tag}/?__a=1")
+    data = HttpClient.new.read_hash(
+      "https://www.instagram.com/explore/tags/#{tag}/?__a=1"
+    )
 
     moretags = []
     codes = []
@@ -66,7 +68,9 @@ module InstagramTagsSearcher
   end
 
   def self.from_first_comment(code)
-    data = fetch_data("https://www.instagram.com/p/#{code}/?__a=1")
+    data = HttpClient.new.read_hash(
+      "https://www.instagram.com/p/#{code}/?__a=1"
+    )
     comments = data['graphql']['shortcode_media']['edge_media_to_parent_comment']
 
     comments_count = comments['count']
@@ -107,7 +111,7 @@ module InstagramTagsSearcher
   def self.posts_count(tag)
     tag_name = CGI.escape(tag[1..-1])
     url = "https://www.instagram.com/explore/tags/#{tag_name}/?__a=1"
-    data = fetch_data(url)
+    data = HttpClient.new.read_hash(url)
 
     posts = data['graphql']['hashtag']['edge_hashtag_to_media']
     posts['count'].to_i
@@ -117,18 +121,5 @@ module InstagramTagsSearcher
     words.select do |word|
       word.start_with?('#') && word.count('#') == 1 && word.length > 2
     end
-  end
-
-  def self.fetch_data(url)
-    header = {
-      'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; WOW64) ' \
-                      'AppleWebKit/537.36 (KHTML, like Gecko) ' \
-                      'Chrome/53.0.2785.104 Safari/537.36 Core/1.53.3357.400 ' \
-                      'QQBrowser/9.6.11858.400'
-    }
-
-    response = URI.parse(url).open(header).read
-
-    JSON.parse(response)
   end
 end
