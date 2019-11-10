@@ -4,22 +4,17 @@ require 'instagram_tags_searcher/instagram/client'
 
 module InstagramTagsSearcher
   def self.search(tag)
-    new_tags, codes = from_top(tag)
+    tags, codes = top_tags(tag)
 
-    if codes.count.positive?
-      codes.each do |code|
-        more_tags = from_first_comment(code)
-        new_tags += more_tags
-      end
+    codes.each do |code|
+      tags += comment_tags(code)
     end
-
-    new_tags = new_tags.uniq
 
     low = []
     middle = []
     high = []
 
-    new_tags.each_slice(30) do |slice|
+    tags.uniq.each_slice(30) do |slice|
       l, m, h = sort_by_frequency(slice)
 
       low += l
@@ -36,34 +31,33 @@ module InstagramTagsSearcher
     }
   end
 
-  def self.from_top(tag)
-    posts = Instagram::Client.new.top(tag).posts
-
-    moretags = []
+  def self.top_tags(tag)
+    tags = []
     codes = []
 
+    posts = Instagram::Client.new.top(tag).posts
     posts.each do |post|
       begin
-        words = post.text.split
+        text = post.text
       rescue StandardError
         codes << post.code
         next
       end
 
-      local_tags = search_tags(words)
+      found_tags = search_tags(text)
 
-      codes << post.code if local_tags.size < 30
+      codes << post.code if found_tags.size < 30
 
-      moretags += local_tags
+      tags += found_tags
     end
 
-    [moretags.uniq, codes]
+    [tags.uniq, codes]
   end
 
-  def self.from_first_comment(code)
+  def self.comment_tags(code)
     post = Instagram::Client.new.post(code)
 
-    search_tags(post.first_comment_text.split)
+    search_tags(post.first_comment_text)
   end
 
   def self.sort_by_frequency(tags)
@@ -91,8 +85,8 @@ module InstagramTagsSearcher
     [low, middle, high]
   end
 
-  def self.search_tags(words)
-    words.select do |word|
+  def self.search_tags(text)
+    text.split.select do |word|
       word.start_with?('#') && word.count('#') == 1 && word.length > 2
     end
   end
